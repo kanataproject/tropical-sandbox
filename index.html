@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トロピカル代数　可視化ツール</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #22263a;
+  --border: #2e3350;
+  --text: #e8eaf0;
+  --text2: #8b91b0;
+  --text3: #555c7a;
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.1);
+  --green-border: rgba(74,222,128,0.3);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.1);
+  --blue-border: rgba(96,165,250,0.3);
+  --orange: #fb923c;
+  --orange-bg: rgba(251,146,60,0.1);
+  --orange-border: rgba(251,146,60,0.3);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.1);
+  --red-border: rgba(248,113,113,0.3);
+  --yellow: #fbbf24;
+  --yellow-bg: rgba(251,191,36,0.1);
+  --yellow-border: rgba(251,191,36,0.3);
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Noto Sans JP', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:2rem 1.25rem}
+header{margin-bottom:2rem}
+h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.sub{font-size:13px;color:var(--text2)}
+.tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.5rem;width:fit-content}
+.tab{padding:8px 20px;font-size:13px;cursor:pointer;background:transparent;border:none;color:var(--text2);font-family:var(--sans);transition:all .15s}
+.tab.active{background:var(--bg3);color:var(--text);font-weight:500}
+.pane{display:none}.pane.active{display:block}
+.sec{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:12px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.panel-label{font-size:14px;font-weight:500}
+.panel-hint{font-size:11px;color:var(--text3)}
+.formula-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px;line-height:1.8;font-family:var(--mono)}
+.ctrl-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ctrl-row:last-child{margin-bottom:0}
+.ctrl-row label{font-size:13px;color:var(--text2);width:32px;flex-shrink:0;font-family:var(--mono)}
+.ctrl-row input[type=range]{flex:1;accent-color:var(--blue)}
+.ctrl-val{font-size:13px;font-weight:500;min-width:40px;text-align:right;color:var(--text);font-family:var(--mono)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-num{font-size:24px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.stat-label{font-size:11px;color:var(--text3);margin-top:4px}
+canvas{width:100%;border-radius:10px;border:1px solid var(--border);display:block;background:var(--bg)}
+.note{font-size:11px;color:var(--text3);line-height:1.7;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-top:12px;font-family:var(--mono)}
+.note span{color:var(--text2)}
+.divider{height:1px;background:var(--border);margin:1.5rem 0}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.8}
+footer a{color:var(--text2);text-decoration:none}
+footer a:hover{color:var(--blue)}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>トロピカル代数　可視化ツール</h1>
+    <p class="sub">min-plus 代数の動作を視覚的に確認する実験的検証ページ</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('t1v', this)">1変数　折れ線</button>
+    <button class="tab" onclick="switchTab('t2v', this)">2変数　トロピカル直線</button>
+  </div>
+
+  <!-- 1変数パネル -->
+  <div id="t1v" class="pane active">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-label">多項式の設定</span>
+        <span class="panel-hint">trop(f) = min(a₀, x+a₁, 2x+a₂, 3x+a₃)</span>
+      </div>
+      <div class="ctrl-row"><label>a₀</label><input type="range" min="-5" max="5" step="0.5" value="0" id="a0" oninput="draw1v()"><span class="ctrl-val" id="a0v">0.0</span></div>
+      <div class="ctrl-row"><label>a₁</label><input type="range" min="-5" max="5" step="0.5" value="1" id="a1" oninput="draw1v()"><span class="ctrl-val" id="a1v">1.0</span></div>
+      <div class="ctrl-row"><label>a₂</label><input type="range" min="-5" max="5" step="0.5" value="-1" id="a2" oninput="draw1v()"><span class="ctrl-val" id="a2v">-1.0</span></div>
+      <div class="ctrl-row"><label>a₃</label><input type="range" min="-5" max="5" step="0.5" value="2" id="a3" oninput="draw1v()"><span class="ctrl-val" id="a3v">2.0</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" id="kink-count" style="color:var(--red)">0</div><div class="stat-label">折れ目の数（境界点）</div></div>
+      <div class="stat-card"><div class="stat-num" id="winner-info" style="color:var(--blue);font-size:14px">—</div><div class="stat-label">x=0 での最小項</div></div>
+    </div>
+
+    <canvas id="c1v" width="680" height="380"></canvas>
+
+    <div class="note">
+      <span>破線</span> = 各項（直線）　／　<span style="color:var(--yellow)">黄実線</span> = トロピカル多項式（最小値の包絡線）　／　<span style="color:var(--red)">赤点</span> = 折れ目（境界点）<br>
+      折れ目は「最小項が切り替わる瞬間」。この点の集合がトロピカル超曲面 V(f) に対応する。
+    </div>
+  </div>
+
+  <!-- 2変数パネル -->
+  <div id="t2v" class="pane">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-label">係数の設定</span>
+        <span class="panel-hint">trop(f) = min(a·x, b·y, c)</span>
+      </div>
+      <div class="ctrl-row"><label>a</label><input type="range" min="-3" max="3" step="0.5" value="0" id="ca" oninput="draw2v()"><span class="ctrl-val" id="cav">0.0</span></div>
+      <div class="ctrl-row"><label>b</label><input type="range" min="-3" max="3" step="0.5" value="0" id="cb" oninput="draw2v()"><span class="ctrl-val" id="cbv">0.0</span></div>
+      <div class="ctrl-row"><label>c</label><input type="range" min="-3" max="3" step="0.5" value="0" id="cc" oninput="draw2v()"><span class="ctrl-val" id="ccv">0.0</span></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" id="vx" style="color:var(--red)">0.00</div><div class="stat-label">頂点 x 座標</div></div>
+      <div class="stat-card"><div class="stat-num" id="vy" style="color:var(--red)">0.00</div><div class="stat-label">頂点 y 座標</div></div>
+    </div>
+
+    <canvas id="c2v" width="680" height="420"></canvas>
+
+    <div class="note">
+      <span style="color:var(--blue)">青領域</span> = a·x が最小　／　<span style="color:var(--green)">緑領域</span> = b·y が最小　／　<span style="color:var(--orange)">橙領域</span> = c が最小<br>
+      <span style="color:var(--yellow)">黄線</span> = 境界（2項が同着になる線）＝ トロピカル直線　／　<span style="color:var(--red)">赤点</span> = 頂点（3項が同着）<br>
+      係数 a・b は「向き」、c は「広がり」に対応。視界計算や FOV との対応を検証中。
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <footer>
+    <div style="margin-bottom:6px">トロピカル代数参考文献</div>
+    <div><a href="https://arxiv.org/abs/1207.1925" target="_blank">Maclagan — Introduction to Tropical Algebraic Geometry (2012)</a></div>
+    <div><a href="https://arxiv.org/abs/math/0306366" target="_blank">Richter-Gebert, Sturmfels, Theobald — First Steps in Tropical Geometry (2003)</a></div>
+  </footer>
+</div>
+
+<script>
+const COLS = {
+  bg: '#0f1117',
+  grid: 'rgba(46,51,80,0.8)',
+  axis: 'rgba(139,145,176,0.4)',
+  lines: ['#60a5fa','#4ade80','#fb923c','#f472b6'],
+  envelope: '#fbbf24',
+  kink: '#f87171',
+  region: ['rgba(96,165,250,0.12)','rgba(74,222,128,0.12)','rgba(251,146,60,0.12)'],
+  tropLine: '#fbbf24',
+  text: 'rgba(139,145,176,0.7)',
+  text2: 'rgba(85,92,122,0.9)',
+};
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 't1v') draw1v(); else draw2v();
+}
+
+function draw1v() {
+  const a = [0,1,2,3].map(i => {
+    const v = parseFloat(document.getElementById('a'+i).value);
+    document.getElementById('a'+i+'v').textContent = v.toFixed(1);
+    return v;
+  });
+
+  const cv = document.getElementById('c1v');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const pad = { t:24, b:40, l:48, r:24 };
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+  const xMin = -4, xMax = 4, yMin = -8, yMax = 4;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = COLS.bg; ctx.fillRect(0,0,W,H);
+
+  const toX = x => pad.l + (x - xMin)/(xMax - xMin) * iW;
+  const toY = y => pad.t + (1 - (y - yMin)/(yMax - yMin)) * iH;
+
+  ctx.strokeStyle = COLS.grid; ctx.lineWidth = 0.5;
+  for (let gx = xMin; gx <= xMax; gx++) {
+    ctx.beginPath(); ctx.moveTo(toX(gx), pad.t); ctx.lineTo(toX(gx), pad.t+iH); ctx.stroke();
+  }
+  for (let gy = yMin; gy <= yMax; gy += 2) {
+    ctx.beginPath(); ctx.moveTo(pad.l, toY(gy)); ctx.lineTo(pad.l+iW, toY(gy)); ctx.stroke();
+  }
+
+  ctx.strokeStyle = COLS.axis; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, toY(0)); ctx.lineTo(pad.l+iW, toY(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(0), pad.t); ctx.lineTo(toX(0), pad.t+iH); ctx.stroke();
+
+  ctx.fillStyle = COLS.text2; ctx.font = '11px IBM Plex Mono, monospace'; ctx.textAlign = 'center';
+  for (let gx = xMin; gx <= xMax; gx++) ctx.fillText(gx, toX(gx), pad.t+iH+16);
+  ctx.textAlign = 'right';
+  for (let gy = yMin; gy <= yMax; gy += 2) if(gy !== 0) ctx.fillText(gy, pad.l-6, toY(gy)+4);
+
+  const terms = [
+    x => a[0],
+    x => x + a[1],
+    x => 2*x + a[2],
+    x => 3*x + a[3],
+  ];
+  const labels = ['a₀', 'x+a₁', '2x+a₂', '3x+a₃'];
+  const N = 400;
+  const xs = Array.from({length:N}, (_,i) => xMin + i*(xMax-xMin)/(N-1));
+
+  terms.forEach((fn, ti) => {
+    ctx.beginPath();
+    ctx.strokeStyle = COLS.lines[ti];
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    xs.forEach((x,i) => {
+      const y = fn(x);
+      if (y < yMin - 1 || y > yMax + 1) { ctx.moveTo(toX(x), toY(Math.max(yMin, Math.min(yMax, y)))); return; }
+      if (i===0) ctx.moveTo(toX(x), toY(y)); else ctx.lineTo(toX(x), toY(y));
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = COLS.lines[ti];
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.textAlign = 'left';
+    const ey = terms[ti](xMax);
+    if (ey >= yMin && ey <= yMax) ctx.fillText(labels[ti], toX(xMax)+4, toY(ey)+4);
+  });
+
+  ctx.beginPath();
+  ctx.strokeStyle = COLS.envelope;
+  ctx.lineWidth = 2;
+  xs.forEach((x,i) => {
+    const y = Math.min(...terms.map(fn => fn(x)));
+    if (y < yMin - 0.5 || y > yMax + 0.5) { return; }
+    if (i===0) ctx.moveTo(toX(x), toY(y)); else ctx.lineTo(toX(x), toY(y));
+  });
+  ctx.stroke();
+
+  const kinks = [];
+  for (let i = 0; i < N-1; i++) {
+    const x1 = xs[i], x2 = xs[i+1];
+    const vals1 = terms.map(fn => fn(x1));
+    const vals2 = terms.map(fn => fn(x2));
+    const winner = v => v.indexOf(Math.min(...v));
+    if (winner(vals1) !== winner(vals2)) kinks.push((x1+x2)/2);
+  }
+
+  kinks.forEach(kx => {
+    const ky = Math.min(...terms.map(fn => fn(kx)));
+    if (ky < yMin || ky > yMax) return;
+    ctx.beginPath();
+    ctx.arc(toX(kx), toY(ky), 5, 0, Math.PI*2);
+    ctx.fillStyle = COLS.kink; ctx.fill();
+    ctx.strokeStyle = COLS.bg; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+
+  document.getElementById('kink-count').textContent = kinks.length;
+  const v0 = terms.map(fn => fn(0));
+  const minV = Math.min(...v0);
+  const winIdx = v0.findIndex(v => Math.abs(v-minV)<1e-9);
+  document.getElementById('winner-info').textContent = labels[winIdx];
+}
+
+function draw2v() {
+  const a = parseFloat(document.getElementById('ca').value);
+  const b = parseFloat(document.getElementById('cb').value);
+  const c = parseFloat(document.getElementById('cc').value);
+  document.getElementById('cav').textContent = a.toFixed(1);
+  document.getElementById('cbv').textContent = b.toFixed(1);
+  document.getElementById('ccv').textContent = c.toFixed(1);
+
+  const cv = document.getElementById('c2v');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const pad = { t:24, b:40, l:48, r:24 };
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+  const rng = 4;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = COLS.bg; ctx.fillRect(0,0,W,H);
+
+  const toX = x => pad.l + (x + rng)/(2*rng) * iW;
+  const toY = y => pad.t + (1 - (y + rng)/(2*rng)) * iH;
+
+  const step = 2*rng/180;
+  for (let xi = -rng; xi <= rng; xi += step) {
+    for (let yi = -rng; yi <= rng; yi += step) {
+      const v0 = a*xi, v1 = b*yi, v2 = c;
+      const m = Math.min(v0,v1,v2);
+      let ri = 2;
+      if (Math.abs(v0-m)<1e-9) ri = 0;
+      else if (Math.abs(v1-m)<1e-9) ri = 1;
+      ctx.fillStyle = COLS.region[ri];
+      ctx.fillRect(toX(xi), toY(yi+step), iW/180+1, iH/180+1);
+    }
+  }
+
+  ctx.strokeStyle = COLS.grid; ctx.lineWidth = 0.5;
+  for (let g = -rng; g <= rng; g++) {
+    ctx.beginPath(); ctx.moveTo(toX(g), pad.t); ctx.lineTo(toX(g), pad.t+iH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l, toY(g)); ctx.lineTo(pad.l+iW, toY(g)); ctx.stroke();
+  }
+
+  ctx.strokeStyle = COLS.axis; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, toY(0)); ctx.lineTo(pad.l+iW, toY(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(0), pad.t); ctx.lineTo(toX(0), pad.t+iH); ctx.stroke();
+
+  ctx.fillStyle = COLS.text2; ctx.font = '11px IBM Plex Mono, monospace'; ctx.textAlign = 'center';
+  for (let g = -rng; g <= rng; g++) {
+    ctx.fillText(g, toX(g), pad.t+iH+16);
+    if (g !== 0) { ctx.textAlign='right'; ctx.fillText(g, pad.l-6, toY(g)+4); ctx.textAlign='center'; }
+  }
+
+  ctx.strokeStyle = COLS.tropLine;
+  ctx.lineWidth = 2;
+
+  const drawLine = (x1,y1,x2,y2) => {
+    ctx.beginPath(); ctx.moveTo(toX(x1), toY(y1)); ctx.lineTo(toX(x2), toY(y2)); ctx.stroke();
+  };
+
+  let vx = 0, vy = 0;
+
+  if (Math.abs(a) > 1e-9 && Math.abs(b) > 1e-9) {
+    vx = c/a; vy = c/b;
+    // a·x = b·y かつ a·x ≤ c → ray 1
+    drawLine(vx, vy, vx - rng*2, vy - rng*2 * (a/b));
+    // a·x = c かつ a·x ≤ b·y → ray 2 (水平右)
+    drawLine(vx, vy, vx + rng*2, vy);
+    // b·y = c かつ b·y ≤ a·x → ray 3 (垂直上)
+    drawLine(vx, vy, vx, vy + rng*2);
+  } else if (Math.abs(a) < 1e-9 && Math.abs(b) > 1e-9) {
+    vy = c/b;
+    drawLine(-rng, vy, rng, vy);
+  } else if (Math.abs(b) < 1e-9 && Math.abs(a) > 1e-9) {
+    vx = c/a;
+    drawLine(vx, -rng, vx, rng);
+  }
+
+  ctx.beginPath();
+  ctx.arc(toX(vx), toY(vy), 5, 0, Math.PI*2);
+  ctx.fillStyle = COLS.kink; ctx.fill();
+  ctx.strokeStyle = COLS.bg; ctx.lineWidth = 1.5; ctx.stroke();
+
+  const legData = [
+    { color: COLS.lines[0], label: 'a·x 最小' },
+    { color: COLS.lines[1], label: 'b·y 最小' },
+    { color: COLS.lines[2], label: 'c 最小' },
+  ];
+  let lx = pad.l+8, ly = pad.t+18;
+  legData.forEach(d => {
+    ctx.fillStyle = d.color; ctx.fillRect(lx, ly-10, 10, 10);
+    ctx.fillStyle = COLS.text; ctx.font='11px IBM Plex Mono,monospace'; ctx.textAlign='left';
+    ctx.fillText(d.label, lx+14, ly); lx += 80;
+  });
+
+  document.getElementById('vx').textContent = vx.toFixed(2);
+  document.getElementById('vy').textContent = vy.toFixed(2);
+}
+
+draw1v();
+</script>
+</body>
+</html>
