@@ -196,14 +196,20 @@ window.addEventListener('mousemove', e => {
   lastMX=e.clientX; lastMY=e.clientY; redraw();
 });
 window.addEventListener('mouseup',()=>dragging=false);
-cv.addEventListener('touchstart',e=>{if(proj==='persp'&&e.touches.length===1){dragging=true;lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;}});
-window.addEventListener('touchmove',e=>{
+cv.addEventListener('touchstart',e=>{
+  if(proj==='persp'&&e.touches.length===1){
+    dragging=true;lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;
+    e.preventDefault();
+  }
+},{passive:false});
+cv.addEventListener('touchmove',e=>{
   if(!dragging||e.touches.length!==1) return;
   rotY+=(e.touches[0].clientX-lastMX)*0.01; rotX+=(e.touches[0].clientY-lastMY)*0.01;
   rotX=Math.max(-1.2,Math.min(1.2,rotX));
   lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY; redraw();
-});
-window.addEventListener('touchend',()=>dragging=false);
+  e.preventDefault();
+},{passive:false});
+cv.addEventListener('touchend',()=>dragging=false);
 
 // 長押しでロック切替（タッチ対応）
 QUADS.forEach(q => {
@@ -405,6 +411,27 @@ rg.addEventListener('mousedown', e => {
   dragRatioIdx = ratioHitTest(x, y);
   drawRatioGraph();
 });
+rg.addEventListener('touchstart', e => {
+  const touch = e.touches[0];
+  const {x,y} = getRatioEventPos(touch);
+  dragRatioIdx = ratioHitTest(x, y);
+  if (dragRatioIdx >= 0) e.preventDefault();
+  drawRatioGraph();
+},{passive:false});
+rg.addEventListener('touchmove', e => {
+  if (dragRatioIdx < 0) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const {x,y} = getRatioEventPos(touch);
+  const pad = {l:8,r:8,t:12,b:12};
+  const iH = rg.height - pad.t - pad.b;
+  const r = (1 - (y - pad.t) / iH) * 2.0;
+  ratioCtrlPts[dragRatioIdx].r = Math.min(2.0, Math.max(0.0, parseFloat(r.toFixed(2))));
+  updateRatioVals();
+  drawRatioGraph();
+  redraw();
+},{passive:false});
+rg.addEventListener('touchend', () => { dragRatioIdx = -1; drawRatioGraph(); });
 window.addEventListener('mousemove', e => {
   if (dragRatioIdx < 0) return;
   const {x,y} = getRatioEventPos(e);
