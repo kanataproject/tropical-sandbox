@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トロピカル代数　3Dワイヤーフレーム実験</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--border:#2e3350;
+  --text:#e8eaf0;--text2:#8b91b0;--text3:#555c7a;
+  --green:#4ade80;--green-bg:rgba(74,222,128,0.1);--green-border:rgba(74,222,128,0.3);
+  --blue:#60a5fa;--blue-bg:rgba(96,165,250,0.1);--blue-border:rgba(96,165,250,0.3);
+  --orange:#fb923c;--orange-bg:rgba(251,146,60,0.1);--orange-border:rgba(251,146,60,0.3);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.1);--red-border:rgba(248,113,113,0.3);
+  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.1);--yellow-border:rgba(251,191,36,0.3);
+  --mono:'IBM Plex Mono',monospace;--sans:'Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:2rem 1.25rem}
+header{margin-bottom:2rem}
+h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.sub{font-size:13px;color:var(--text2)}
+.sec{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:12px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.panel-label{font-size:14px;font-weight:500}
+.panel-hint{font-size:11px;color:var(--text3)}
+.toggle-row{display:flex;gap:8px;margin-bottom:4px}
+.tbtn{padding:6px 16px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.tbtn:hover{border-color:var(--blue-border);color:var(--blue)}
+.tbtn.active{background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue);font-weight:500}
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ctrl-row:last-child{margin-bottom:0}
+.ctrl-row label{font-size:12px;color:var(--text2);width:36px;flex-shrink:0;font-family:var(--mono)}
+.ctrl-row .ctrl-desc{font-size:11px;color:var(--text3);width:100px;flex-shrink:0}
+.ctrl-row input[type=range]{flex:1;accent-color:var(--blue)}
+.ctrl-val{font-size:12px;font-weight:500;min-width:36px;text-align:right;color:var(--text);font-family:var(--mono)}
+canvas{width:100%;border-radius:10px;border:1px solid var(--border);display:block;background:var(--bg);cursor:grab}
+canvas:active{cursor:grabbing}
+.note{font-size:11px;color:var(--text3);line-height:1.7;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-top:12px;font-family:var(--mono)}
+.note span{color:var(--text2)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.stat-label{font-size:10px;color:var(--text3);margin-top:3px}
+.divider{height:1px;background:var(--border);margin:1.2rem 0}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.8}
+footer a{color:var(--text2);text-decoration:none}
+footer a:hover{color:var(--blue)}
+
+/* 半径比率グラフ */
+.ratio-graph{width:100%;height:120px;border-radius:8px;border:1px solid var(--border);display:block;background:var(--bg);cursor:crosshair;margin-bottom:8px}
+.ratio-vals{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);color:var(--text3)}
+
+/* 象限セレクター */
+.quadrant-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.qbtn{padding:12px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--mono);transition:all .15s;text-align:center;line-height:1.6;user-select:none}
+.qbtn:hover{border-color:var(--blue-border)}
+.qbtn.selected{border-color:var(--blue-border);color:var(--blue);background:var(--blue-bg)}
+.qbtn.unlocked{border-color:var(--orange-border);color:var(--orange);background:var(--orange-bg)}
+.qbtn.selected.unlocked{border-color:var(--yellow-border);color:var(--yellow);background:var(--yellow-bg)}
+.lock-icon{font-size:14px}
+.q-label{font-size:11px;color:var(--text3);margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>3D ワイヤーフレーム実験</h1>
+    <p class="sub">断面形状 × 投影方式 × 象限独立制御 — Canvas2D 疑似3D</p>
+  </header>
+
+  <div class="panel">
+    <div class="panel-head"><span class="panel-label">断面形状</span></div>
+    <div class="toggle-row">
+      <button class="tbtn active" id="btn-square" onclick="setShape('square')">□ 正方形断面</button>
+      <button class="tbtn" id="btn-tropical" onclick="setShape('tropical')">◇ トロピカル断面</button>
+    </div>
+    <div class="panel-head" style="margin-top:12px"><span class="panel-label">投影方式</span></div>
+    <div class="toggle-row">
+      <button class="tbtn active" id="btn-iso" onclick="setProj('iso')">等角投影</button>
+      <button class="tbtn" id="btn-persp" onclick="setProj('persp')">透視投影（ドラッグで回転）</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="panel-label">形状パラメータ</span></div>
+    <div class="ctrl-row"><label>層数</label><span class="ctrl-desc"></span><input type="range" min="2" max="20" step="1" value="8" id="layers" oninput="redraw()"><span class="ctrl-val" id="layers-v">8</span></div>
+    <div class="ctrl-row"><label>半径</label><span class="ctrl-desc"></span><input type="range" min="0.3" max="2.0" step="0.1" value="1.0" id="radius" oninput="redraw()"><span class="ctrl-val" id="radius-v">1.0</span></div>
+    <div class="ctrl-row"><label>間隔</label><span class="ctrl-desc"></span><input type="range" min="0.2" max="1.5" step="0.1" value="0.6" id="zstep" oninput="redraw()"><span class="ctrl-val" id="zstep-v">0.6</span></div>
+    <div class="divider"></div>
+    <div class="panel-head"><span class="panel-label">半径比率グラフ</span><span class="panel-hint">制御点をドラッグ</span></div>
+    <canvas class="ratio-graph" id="ratio-graph" width="660" height="120"></canvas>
+    <div class="ratio-vals">
+      <span>上端 ×<span id="rv-top">1.0</span></span>
+      <span>中央 ×<span id="rv-mid">1.0</span></span>
+      <span>下端 ×<span id="rv-bot">1.0</span></span>
+    </div>
+  </div>
+
+  <!-- トロピカル係数パネル -->
+  <div class="panel" id="tropical-panel" style="display:none">
+    <div class="panel-head">
+      <span class="panel-label">象限コントロール</span>
+      <span class="panel-hint">クリック：選択　長押し：ロック切替</span>
+    </div>
+
+    <div class="quadrant-grid">
+      <div class="qbtn" id="q-tl" onclick="selectQuad('tl')" ondblclick="toggleLock('tl')">
+        <div class="q-label">左上</div>
+        <span class="lock-icon" id="lock-tl">🔒</span>
+      </div>
+      <div class="qbtn selected" id="q-tr" onclick="selectQuad('tr')" ondblclick="toggleLock('tr')">
+        <div class="q-label">右上</div>
+        <span class="lock-icon" id="lock-tr">🔓</span>
+      </div>
+      <div class="qbtn" id="q-bl" onclick="selectQuad('bl')" ondblclick="toggleLock('bl')">
+        <div class="q-label">左下</div>
+        <span class="lock-icon" id="lock-bl">🔒</span>
+      </div>
+      <div class="qbtn" id="q-br" onclick="selectQuad('br')" ondblclick="toggleLock('br')">
+        <div class="q-label">右下</div>
+        <span class="lock-icon" id="lock-br">🔒</span>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-family:var(--mono)">
+      ダブルクリックでロック切替　／　🔓 = 独立　🔒 = 選択中の象限に連動
+    </div>
+
+    <div class="sec" id="quad-label">右上 の係数</div>
+    <div class="ctrl-row"><label>a₀</label><span class="ctrl-desc" style="font-size:11px;font-family:var(--mono)">全体スケール</span><input type="range" min="-3" max="3" step="0.1" value="0" id="ta0" oninput="onCoeffChange()"><span class="ctrl-val" id="ta0-v">0.0</span></div>
+    <div class="ctrl-row"><label>a₁</label><span class="ctrl-desc" style="font-size:11px;font-family:var(--mono)">端の細さ</span><input type="range" min="-3" max="3" step="0.1" value="-1" id="ta1" oninput="onCoeffChange()"><span class="ctrl-val" id="ta1-v">-1.0</span></div>
+    <div class="ctrl-row"><label>a₂</label><span class="ctrl-desc" style="font-size:11px;font-family:var(--mono)">折れ位置以降</span><input type="range" min="-3" max="3" step="0.1" value="-2" id="ta2" oninput="onCoeffChange()"><span class="ctrl-val" id="ta2-v">-2.0</span></div>
+    <div class="ctrl-row"><label>a₃</label><span class="ctrl-desc" style="font-size:11px;font-family:var(--mono)">細かい調整</span><input type="range" min="-3" max="3" step="0.1" value="-3" id="ta3" oninput="onCoeffChange()"><span class="ctrl-val" id="ta3-v">-3.0</span></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num" id="st-verts">0</div><div class="stat-label">頂点数</div></div>
+    <div class="stat-card"><div class="stat-num" id="st-edges">0</div><div class="stat-label">有効辺数</div></div>
+    <div class="stat-card"><div class="stat-num" id="st-mode" style="font-size:13px;padding-top:4px">—</div><div class="stat-label">現在のモード</div></div>
+  </div>
+
+  <canvas id="c3d" width="680" height="500"></canvas>
+
+  <div class="note" id="note-text">
+    <span>等角投影</span> — 平行線が平行のまま描画。奥行き感は少ないが形状が歪まない。
+  </div>
+
+  <div class="divider"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="tbtn" onclick="dumpCSV()" style="font-size:12px">断面座標をCSV出力</button>
+  </div>
+  <div id="csv-out" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;font-family:var(--mono);color:var(--text2);white-space:pre;overflow-x:auto;margin-bottom:12px;max-height:200px;overflow-y:auto"></div>
+
+  <footer>
+    <div><a href="index.html">← トロピカル代数 可視化ツール（STEP1）</a></div>
+  </footer>
+</div>
+
+<script>
+let shape = 'square';
+let proj = 'iso';
+let rotX = 0.4, rotY = 0.6;
+let dragging = false, lastMX = 0, lastMY = 0;
+let longPressTimer = null;
+
+// 象限ごとの係数（tr=右上基準）
+const QUADS = ['tr','tl','br','bl'];
+const quadCoeffs = {
+  tr: [0, -1, -2, -3],
+  tl: [0, -1, -2, -3],
+  br: [0, -1, -2, -3],
+  bl: [0, -1, -2, -3],
+};
+// ロック状態（trは常にアンロック、他はデフォルトロック）
+const quadLocked = { tr: false, tl: true, br: true, bl: true };
+let selectedQuad = 'tr';
+
+const cv = document.getElementById('c3d');
+cv.addEventListener('mousedown', e => { if(proj==='persp'){dragging=true;lastMX=e.clientX;lastMY=e.clientY;}});
+window.addEventListener('mousemove', e => {
+  if(!dragging) return;
+  rotY+=(e.clientX-lastMX)*0.01; rotX+=(e.clientY-lastMY)*0.01;
+  rotX=Math.max(-1.2,Math.min(1.2,rotX));
+  lastMX=e.clientX; lastMY=e.clientY; redraw();
+});
+window.addEventListener('mouseup',()=>dragging=false);
+cv.addEventListener('touchstart',e=>{if(proj==='persp'&&e.touches.length===1){dragging=true;lastMX=e.touches[0].clientX;lastMY=e.touches[0].clientY;}});
+window.addEventListener('touchmove',e=>{
+  if(!dragging||e.touches.length!==1) return;
+  rotY+=(e.touches[0].clientX-lastMX)*0.01; rotX+=(e.touches[0].clientY-lastMY)*0.01;
+  rotX=Math.max(-1.2,Math.min(1.2,rotX));
+  lastMX=e.touches[0].clientX; lastMY=e.touches[0].clientY; redraw();
+});
+window.addEventListener('touchend',()=>dragging=false);
+
+// 長押しでロック切替（タッチ対応）
+QUADS.forEach(q => {
+  const el = document.getElementById('q-'+q);
+  el.addEventListener('touchstart', e => {
+    longPressTimer = setTimeout(() => { toggleLock(q); }, 500);
+  });
+  el.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+  el.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
+});
+
+function selectQuad(q) {
+  selectedQuad = q;
+  updateQuadUI();
+  loadCoeffsToSliders(q);
+}
+
+function toggleLock(q) {
+  if (q === 'tr') return; // 右上は常にアンロック（基準）
+  quadLocked[q] = !quadLocked[q];
+  if (quadLocked[q]) {
+    // ロックしたら選択中の象限の係数をコピー
+    quadCoeffs[q] = [...quadCoeffs[selectedQuad]];
+  }
+  updateQuadUI();
+  redraw();
+}
+
+function updateQuadUI() {
+  QUADS.forEach(q => {
+    const el = document.getElementById('q-'+q);
+    const lockEl = document.getElementById('lock-'+q);
+    el.className = 'qbtn';
+    if (q === selectedQuad) el.classList.add('selected');
+    if (!quadLocked[q]) el.classList.add('unlocked');
+    lockEl.textContent = quadLocked[q] ? '🔒' : '🔓';
+  });
+  const labels = {tr:'右上', tl:'左上', br:'右下', bl:'左下'};
+  document.getElementById('quad-label').textContent = labels[selectedQuad] + ' の係数';
+}
+
+function loadCoeffsToSliders(q) {
+  const a = quadCoeffs[q];
+  [0,1,2,3].forEach(i => {
+    document.getElementById('ta'+i).value = a[i];
+    document.getElementById('ta'+i+'-v').textContent = a[i].toFixed(1);
+  });
+}
+
+function onCoeffChange() {
+  // スライダーから係数を読む
+  const a = [0,1,2,3].map(i => {
+    let v = parseFloat(document.getElementById('ta'+i).value);
+    document.getElementById('ta'+i+'-v').textContent = v.toFixed(1);
+    return v;
+  });
+
+  // a0≥a1≥a2≥a3の制約
+  if (a[1] > a[0]) { a[1] = a[0]; document.getElementById('ta1').value=a[1]; document.getElementById('ta1-v').textContent=a[1].toFixed(1); }
+  if (a[2] >= a[1]) { a[2] = a[1]-0.1; document.getElementById('ta2').value=a[2]; document.getElementById('ta2-v').textContent=a[2].toFixed(1); }
+  if (a[3] >= a[2]) { a[3] = a[2]-0.1; document.getElementById('ta3').value=a[3]; document.getElementById('ta3-v').textContent=a[3].toFixed(1); }
+
+  // 選択中の象限に保存
+  quadCoeffs[selectedQuad] = [...a];
+
+  // ロック中の象限に伝播
+  QUADS.forEach(q => {
+    if (q !== selectedQuad && quadLocked[q]) {
+      quadCoeffs[q] = [...a];
+    }
+  });
+
+  redraw();
+}
+
+function setShape(s) {
+  shape = s;
+  document.getElementById('btn-square').className='tbtn'+(s==='square'?' active':'');
+  document.getElementById('btn-tropical').className='tbtn'+(s==='tropical'?' active':'');
+  document.getElementById('tropical-panel').style.display = s==='tropical'?'block':'none';
+  redraw();
+}
+
+function setProj(p) {
+  proj = p;
+  document.getElementById('btn-iso').className='tbtn'+(p==='iso'?' active':'');
+  document.getElementById('btn-persp').className='tbtn'+(p==='persp'?' active':'');
+  document.getElementById('note-text').innerHTML = p==='iso'
+    ? '<span>等角投影</span> — 平行線が平行のまま描画。奥行き感は少ないが形状が歪まない。'
+    : '<span>透視投影</span> — ドラッグで回転できる。遠くの頂点が小さく見える。';
+  redraw();
+}
+
+function dist2(a,b){ return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2); }
+
+// --- 半径比率グラフ ---
+// 制御点：[t=0(上端), t=0.5(中央), t=1(下端)] の比率値（0.1〜2.0）
+const ratioCtrlPts = [
+  {t: 0,   r: 1.0},
+  {t: 0.5, r: 1.0},
+  {t: 1.0, r: 1.0},
+];
+let dragRatioIdx = -1;
+
+const rg = document.getElementById('ratio-graph');
+
+function getRatioAt(t) {
+  // 3点のベジェ補間（catmull-rom的な線形補間）
+  if (t <= ratioCtrlPts[0].t) return ratioCtrlPts[0].r;
+  if (t >= ratioCtrlPts[2].t) return ratioCtrlPts[2].r;
+  if (t <= ratioCtrlPts[1].t) {
+    const s = (t - ratioCtrlPts[0].t) / (ratioCtrlPts[1].t - ratioCtrlPts[0].t);
+    return ratioCtrlPts[0].r + (ratioCtrlPts[1].r - ratioCtrlPts[0].r) * s;
+  } else {
+    const s = (t - ratioCtrlPts[1].t) / (ratioCtrlPts[2].t - ratioCtrlPts[1].t);
+    return ratioCtrlPts[1].r + (ratioCtrlPts[2].r - ratioCtrlPts[1].r) * s;
+  }
+}
+
+function drawRatioGraph() {
+  const W = rg.width, H = rg.height;
+  const ctx = rg.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0f1117'; ctx.fillRect(0,0,W,H);
+
+  const pad = {l:8, r:8, t:12, b:12};
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+
+  // グリッド
+  ctx.strokeStyle = 'rgba(46,51,80,0.8)'; ctx.lineWidth = 0.5;
+  [0.5, 1.0, 1.5].forEach(rv => {
+    const py = pad.t + iH - (rv/2.0)*iH;
+    ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(pad.l+iW, py); ctx.stroke();
+  });
+
+  // x=1.0のライン（比率1の基準）
+  const refY = pad.t + iH - (1.0/2.0)*iH;
+  ctx.strokeStyle = 'rgba(139,145,176,0.2)'; ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, refY); ctx.lineTo(pad.l+iW, refY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 補間曲線
+  ctx.strokeStyle = 'rgba(96,165,250,0.7)'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i=0; i<=100; i++) {
+    const t = i/100;
+    const r = getRatioAt(t);
+    const px = pad.l + t*iW;
+    const py = pad.t + iH - Math.min(Math.max(r/2.0, 0), 1)*iH;
+    if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  // 制御点
+  ratioCtrlPts.forEach((cp, i) => {
+    const px = pad.l + cp.t * iW;
+    const py = pad.t + iH - Math.min(Math.max(cp.r/2.0, 0), 1)*iH;
+    ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2);
+    ctx.fillStyle = i===dragRatioIdx ? '#fbbf24' : '#60a5fa';
+    ctx.fill();
+    ctx.strokeStyle = '#0f1117'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = 'rgba(139,145,176,0.6)';
+    ctx.font = '10px IBM Plex Mono,monospace'; ctx.textAlign = 'center';
+    ctx.fillText(cp.r.toFixed(1), px, py - 10);
+  });
+
+  // ラベル
+  ctx.fillStyle = 'rgba(85,92,122,0.8)'; ctx.font = '10px IBM Plex Mono,monospace';
+  ctx.textAlign = 'left'; ctx.fillText('×2.0', pad.l+2, pad.t+10);
+  ctx.fillText('×1.0', pad.l+2, refY-3);
+  ctx.fillText('×0.0', pad.l+2, pad.t+iH);
+}
+
+function getRatioEventPos(e) {
+  const rect = rg.getBoundingClientRect();
+  const scaleX = rg.width / rect.width;
+  const scaleY = rg.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY,
+  };
+}
+
+function ratioHitTest(mx, my) {
+  const pad = {l:8, r:8, t:12, b:12};
+  const iW = rg.width - pad.l - pad.r, iH = rg.height - pad.t - pad.b;
+  for (let i=0; i<ratioCtrlPts.length; i++) {
+    const cp = ratioCtrlPts[i];
+    const px = pad.l + cp.t * iW;
+    const py = pad.t + iH - Math.min(Math.max(cp.r/2.0,0),1)*iH;
+    if (Math.sqrt((mx-px)**2+(my-py)**2) < 12) return i;
+  }
+  return -1;
+}
+
+rg.addEventListener('mousedown', e => {
+  const {x,y} = getRatioEventPos(e);
+  dragRatioIdx = ratioHitTest(x, y);
+  drawRatioGraph();
+});
+window.addEventListener('mousemove', e => {
+  if (dragRatioIdx < 0) return;
+  const {x,y} = getRatioEventPos(e);
+  const pad = {l:8, r:8, t:12, b:12};
+  const iH = rg.height - pad.t - pad.b;
+  const r = (1 - (y - pad.t) / iH) * 2.0;
+  ratioCtrlPts[dragRatioIdx].r = Math.min(2.0, Math.max(0.0, parseFloat(r.toFixed(2))));
+  updateRatioVals();
+  drawRatioGraph();
+  redraw();
+});
+window.addEventListener('mouseup', () => { dragRatioIdx = -1; drawRatioGraph(); });
+
+function updateRatioVals() {
+  document.getElementById('rv-top').textContent = ratioCtrlPts[0].r.toFixed(1);
+  document.getElementById('rv-mid').textContent = ratioCtrlPts[1].r.toFixed(1);
+  document.getElementById('rv-bot').textContent = ratioCtrlPts[2].r.toFixed(1);
+}
+
+function polyArea(pts){
+  let area=0; const n=pts.length;
+  for(let i=0;i<n;i++){const[x1,y1]=pts[i],[x2,y2]=pts[(i+1)%n];area+=x1*y2-x2*y1;}
+  return Math.abs(area)/2;
+}
+
+function getTropicalKinks(a) {
+  const candidates = [0, 3];
+  const xs = [a[0]-a[1], (a[0]-a[2])/2, (a[0]-a[3])/3, a[1]-a[2], (a[1]-a[3])/2, a[2]-a[3]];
+  xs.forEach(x => { if(x>0&&x<3) candidates.push(x); });
+  candidates.sort((p,q)=>p-q);
+
+  const mergeEps = 1e-6;
+  const merged = [candidates[0]];
+  for(let i=1;i<candidates.length;i++){
+    if(candidates[i]-merged[merged.length-1]>mergeEps) merged.push(candidates[i]);
+  }
+
+  const tval = x => Math.min(a[0], x+a[1], 2*x+a[2], 3*x+a[3]);
+  const winner = x => {
+    const vals=[a[0],x+a[1],2*x+a[2],3*x+a[3]];
+    const m=Math.min(...vals);
+    return vals.map((v,i)=>Math.abs(v-m)<1e-9?i:-1).filter(i=>i>=0).join(',');
+  };
+
+  const kinks=[[merged[0],tval(merged[0])]];
+  let prevW=winner(merged[0]);
+  for(let i=1;i<merged.length;i++){
+    const x=merged[i],w=winner(x);
+    if(w!==prevW){kinks.push([x,tval(x)]);prevW=w;}
+  }
+  if(kinks[kinks.length-1][0]!==3) kinks.push([3,tval(3)]);
+
+  // yMaxの末尾連続点を1点に間引く
+  const rawYMax=Math.max(...kinks.map(p=>p[1]));
+  let trimEnd=kinks.length;
+  for(let i=kinks.length-1;i>=1;i--){
+    if(Math.abs(kinks[i][1]-rawYMax)<1e-9) trimEnd=i; else break;
+  }
+  return trimEnd<kinks.length ? kinks.slice(0,trimEnd+1) : kinks;
+}
+
+function getTropicalCrossSection(r, coeffs) {
+  // coeffs = {tr, tl, br, bl} それぞれの係数配列
+  const normalize = (kinks) => {
+    const yVals = kinks.map(p=>p[1]);
+    const yMin=Math.min(...yVals), yMax=Math.max(...yVals), yRange=yMax-yMin||1;
+    return kinks.map(([x,y]) => [(x/3)*r, ((yMax-y)/yRange)*r]);
+  };
+
+  const normTR = normalize(getTropicalKinks(coeffs.tr)); // 右上
+  const normTL = normalize(getTropicalKinks(coeffs.tl)); // 左上（x反転）
+  const normBR = normalize(getTropicalKinks(coeffs.br)); // 右下（y反転）
+  const normBL = normalize(getTropicalKinks(coeffs.bl)); // 左下（xy反転）
+
+  // 時計回りに結合：右上→右下→左下→左上
+  const rightUp   = normTR.map(([x,y])  => [ x,  y]);  // x=0→r,  y+
+  const rightDown = normBR.slice().reverse().map(([x,y]) => [ x, -y]);  // x=r→0,  y-
+  const leftDown  = normBL.map(([x,y])  => [-x, -y]);  // x=0→-r, y-
+  const leftUp    = normTL.slice().reverse().map(([x,y]) => [-x,  y]);  // x=-r→0, y+
+
+  return [
+    ...rightUp,
+    ...rightDown.slice(1),
+    ...leftDown.slice(1),
+    ...leftUp.slice(1, leftUp.length-1),
+  ];
+}
+
+function getSquareCrossSection(r){ return [[-r,-r],[r,-r],[r,r],[-r,r]]; }
+
+function project(x,y,z,W,H){
+  if(proj==='iso'){
+    const ang=Math.PI/6;
+    return[W/2+(x-z)*Math.cos(ang)*60,H/2+(x+z)*Math.sin(ang)*60-y*60,1];
+  } else {
+    const cx=Math.cos(rotY),sx=Math.sin(rotY),cy=Math.cos(rotX),sy=Math.sin(rotX);
+    const rx=x*cx+z*sx,rz=-x*sx+z*cx,ry=y*cy-rz*sy,rz2=y*sy+rz*cy;
+    const fov=4,scale=fov/(fov+rz2+3);
+    return[W/2+rx*scale*140,H/2-ry*scale*140,scale];
+  }
+}
+
+function redraw(){
+  const layers=parseInt(document.getElementById('layers').value);
+  const radius=parseFloat(document.getElementById('radius').value);
+  const zstep=parseFloat(document.getElementById('zstep').value);
+  document.getElementById('layers-v').textContent=layers;
+  document.getElementById('radius-v').textContent=radius.toFixed(1);
+  document.getElementById('zstep-v').textContent=zstep.toFixed(1);
+
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0f1117'; ctx.fillRect(0,0,W,H);
+
+  const cs = shape==='square'
+    ? getSquareCrossSection(radius)
+    : getTropicalCrossSection(radius, quadCoeffs);
+
+  const nPts=cs.length;
+  const zStart=-(layers-1)*zstep/2;
+
+  const area=polyArea(cs);
+  const csYSpan=Math.max(...cs.map(p=>p[1]))-Math.min(...cs.map(p=>p[1]));
+  const csXSpan=Math.max(...cs.map(p=>p[0]))-Math.min(...cs.map(p=>p[0]));
+  const showOutline=area>radius*radius*0.01&&csYSpan>radius*0.1&&csXSpan>radius*0.1;
+
+  const threshold=0.04*radius;
+  const isVisible=cs.map((p,pi)=>{
+    if(shape==='square') return true;
+    const prev=cs[(pi-1+nPts)%nPts],next=cs[(pi+1)%nPts];
+    return !(dist2(p,prev)<threshold&&dist2(p,next)<threshold);
+  });
+
+  const projected=[];
+  for(let li=0;li<layers;li++){
+    const z=zStart+li*zstep;
+    const t = layers>1 ? li/(layers-1) : 0.5;
+    const ratio = getRatioAt(t);
+    projected.push(cs.map(([x,y])=>project(x*ratio,y*ratio,z,W,H)));
+  }
+
+  let edgeCount=0;
+
+  // 柱辺
+  if(showOutline){
+    for(let pi=0;pi<nPts;pi++){
+      if(!isVisible[pi]) continue;
+      ctx.strokeStyle=proj==='iso'?'rgba(74,222,128,0.45)':`rgba(74,222,128,${Math.min(0.6,(projected[0][pi][2]||1)*0.8)})`;
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      for(let li=0;li<layers;li++){
+        const[ppx,ppy]=projected[li][pi];
+        if(li===0) ctx.moveTo(ppx,ppy); else ctx.lineTo(ppx,ppy);
+      }
+      ctx.stroke(); edgeCount++;
+    }
+  }
+
+  // 断面輪郭
+  if(showOutline){
+    for(let li=0;li<layers;li++){
+      const scale=projected[li][0][2]||1;
+      ctx.strokeStyle=proj==='iso'?'rgba(96,165,250,0.75)':`rgba(96,165,250,${Math.min(0.95,scale*1.3)})`;
+      ctx.lineWidth=proj==='iso'?1.5:Math.max(0.5,scale*1.8);
+      ctx.beginPath();
+      projected[li].forEach(([ppx,ppy],i)=>{ if(i===0) ctx.moveTo(ppx,ppy); else ctx.lineTo(ppx,ppy); });
+      ctx.closePath(); ctx.stroke();
+      edgeCount+=nPts;
+    }
+  }
+
+  document.getElementById('st-verts').textContent=layers*nPts;
+  document.getElementById('st-edges').textContent=edgeCount;
+  document.getElementById('st-mode').textContent=(shape==='square'?'正方形':'トロピカル')+' / '+(proj==='iso'?'等角':'透視');
+  ctx.fillStyle='rgba(139,145,176,0.4)'; ctx.font='11px IBM Plex Mono,monospace'; ctx.textAlign='left';
+  ctx.fillText(proj==='iso'?'等角投影':'透視投影（ドラッグで回転）',12,H-12);
+}
+
+function dumpCSV(){
+  const r=parseFloat(document.getElementById('radius').value);
+  const cs=shape==='square'?getSquareCrossSection(r):getTropicalCrossSection(r,quadCoeffs);
+  let csv='idx,x,y\n';
+  cs.forEach(([x,y],i)=>{ csv+=`${i},${x.toFixed(6)},${y.toFixed(6)}\n`; });
+  const el=document.getElementById('csv-out');
+  el.style.display='block'; el.textContent=csv;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='cross_section.csv'; a.click();
+}
+
+updateQuadUI();
+drawRatioGraph();
+redraw();
+</script>
+</body>
+</html>
