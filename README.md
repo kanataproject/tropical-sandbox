@@ -6,7 +6,7 @@ Sandbox for exploring tropical algebra — from min-plus basics to applied geome
 
 ## デモ
 
-https://[ユーザー名].github.io/tropical-sandbox/
+https://kanataproject.github.io/tropical-sandbox/
 
 ## 現在のコンテンツ
 
